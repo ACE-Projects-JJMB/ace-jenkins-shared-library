@@ -17,21 +17,17 @@ def call() {
             }
 
             stage('Detect App Name') {
-                steps {
-                    script {
-                        def projectFile = readFile '.project'
-                        def matcher = (projectFile =~ /<name>(.*?)<\/name>/)
+				steps {
+					script {
+						def repoUrl = scm.getUserRemoteConfigs()[0].getUrl()
+						def appName = repoUrl.tokenize('/').last().replace('.git','')
 
-                        if (!matcher) {
-                            error("No se encontró nombre de app en .project")
-                        }
+						env.APP_NAME = appName
 
-                        env.APP_NAME = matcher[0][1]
-
-                        echo "App detectada: ${env.APP_NAME}"
-                    }
-                }
-            }
+						echo "App detectada (desde repo): ${env.APP_NAME}"
+					}
+				}
+			}
 
             stage('Build BAR') {
                 steps {
