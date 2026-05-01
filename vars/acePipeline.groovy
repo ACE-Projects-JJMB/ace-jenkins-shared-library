@@ -26,25 +26,29 @@ def call() {
                 steps {
                     script {
 
-                        //Detecta app ACE real desde .project
-                        bat(script: 'dir /s /b *.bar', returnStdout: true)
+                        // Buscar .project correctamente
+                        def projectFiles = bat(
+                            script: 'dir /s /b .project',
+                            returnStdout: true
+                        ).trim().split("\\r?\\n")
 
-                        if (projectFile.length == 0) {
+                        if (projectFiles.size() == 0 || projectFiles[0].trim() == "") {
                             error "No se encontró .project (no es app ACE válida)"
                         }
 
-                        def appProjectPath = projectFile[0].path
-                        def appRoot = appProjectPath.replace('.project', '')
+                        def appProjectPath = projectFiles[0].trim()
+                        def appRoot = appProjectPath.replace("\\.project", "")
 
-                        // Leer nombre real desde .project
+                        // Leer contenido del .project
                         def projectContent = readFile(appProjectPath)
-                        def matcher = projectContent =~ /<name>(.*?)<\/name>/
 
-                        if (!matcher) {
+                        def matcher = projectContent =~ /<name>(.*?)<\\/name>/
+
+                        if (!matcher.find()) {
                             error "No se pudo leer nombre de app en .project"
                         }
 
-                        env.APP_NAME = matcher[0][1]
+                        env.APP_NAME = matcher.group(1)
                         env.APP_ROOT = appRoot
 
                         echo "App ACE detectada: ${env.APP_NAME}"
