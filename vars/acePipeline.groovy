@@ -27,7 +27,7 @@ def call() {
                     script {
 
                         //Detecta app ACE real desde .project
-                        def projectFile = findFiles(glob: '**/.project')
+                        bat(script: 'dir /s /b *.bar', returnStdout: true)
 
                         if (projectFile.length == 0) {
                             error "No se encontró .project (no es app ACE válida)"
