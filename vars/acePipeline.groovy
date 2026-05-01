@@ -27,23 +27,26 @@ def call() {
             stage('Detect App') {
                 steps {
                     script {
+
                         def projectFile = findFiles(glob: "**/.project")
 
-                        if (projectFile.length == 0) {
-                            error "No .project found"
+                        if (!projectFile || projectFile.length == 0) {
+                            error "❌ No se encontró .project"
                         }
 
                         def content = readFile(projectFile[0].path)
+
                         def matcher = (content =~ /<name>(.*?)<\/name>/)
 
                         if (!matcher) {
-                            error "Cannot read app name"
+                            error "❌ No se pudo leer el nombre de la app"
                         }
 
                         env.APP_NAME = matcher[0][1]
                         env.APP_ROOT = pwd()
 
-                        echo "✔ App: ${env.APP_NAME}"
+                        echo "✔ App detectada: ${env.APP_NAME}"
+                        echo "✔ Root: ${env.APP_ROOT}"
                     }
                 }
             }
@@ -52,6 +55,8 @@ def call() {
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+
+                    echo Building BAR...
 
                     ibmint package ^
                       --input-path "%APP_ROOT%" ^
@@ -65,19 +70,23 @@ def call() {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
+                    echo Deploying to %IS_NAME%...
+
                     ibmint deploy ^
                       --input-bar-file "%APP_NAME%.bar" ^
                       --output-work-directory "%WORK_DIR%"
+
+                    echo Deployment completed.
                     """
                 }
             }
 
-            stage('Restart Integration Server') {
+            stage('Verify Deployment') {
                 steps {
                     bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+                    echo Checking deployed files...
 
-                    echo Restart not using mqsirestart (fix required)
+                    dir "%WORK_DIR%"
                     """
                 }
             }
@@ -85,7 +94,7 @@ def call() {
 
         post {
             success {
-                echo "✔ Deployment OK"
+                echo "✔ Deployment SUCCESS"
             }
             failure {
                 echo "❌ Deployment FAILED"
