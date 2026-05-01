@@ -1,12 +1,13 @@
 def call() {
 
     pipeline {
+
         agent any
 
         environment {
-            ACE_HOME = "C:\\Program Files\\IBM\\ACE\\12.0.8.0"
-            IS_NAME  = "PRUEBAS_LOCAL"
-            WORK_DIR = "E:\\ACE\\IS\\PRUEBAS_LOCAL"
+            ACE_HOME = 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
+            IS_NAME  = 'PRUEBAS_LOCAL'
+            WORK_DIR = 'E:\\ACE\\IS\\PRUEBAS_LOCAL'
         }
 
         stages {
@@ -26,25 +27,23 @@ def call() {
             stage('Detect App') {
                 steps {
                     script {
-
                         def projectFile = findFiles(glob: "**/.project")
 
                         if (projectFile.length == 0) {
-                            error "No se encontró .project"
+                            error "No .project found"
                         }
 
-                        def projectContent = readFile(projectFile[0].path)
-                        def matcher = (projectContent =~ /<name>(.*?)<\/name>/)
+                        def content = readFile(projectFile[0].path)
+                        def matcher = (content =~ /<name>(.*?)<\/name>/)
 
                         if (!matcher) {
-                            error "No se pudo leer el nombre de la app"
+                            error "Cannot read app name"
                         }
 
                         env.APP_NAME = matcher[0][1]
                         env.APP_ROOT = pwd()
 
-                        echo "✔ App detectada: ${env.APP_NAME}"
-                        echo "✔ Root: ${env.APP_ROOT}"
+                        echo "✔ App: ${env.APP_NAME}"
                     }
                 }
             }
@@ -53,8 +52,6 @@ def call() {
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Building BAR...
 
                     ibmint package ^
                       --input-path "%APP_ROOT%" ^
@@ -68,9 +65,9 @@ def call() {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying to %IS_NAME%...
-
-                    mqsibar -a "%APP_NAME%.bar" -c %IS_NAME%
+                    ibmint deploy ^
+                      --input-bar-file "%APP_NAME%.bar" ^
+                      --output-work-directory "%WORK_DIR%"
                     """
                 }
             }
@@ -80,11 +77,7 @@ def call() {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Restarting %IS_NAME%...
-
-                    mqsistop %IS_NAME%
-                    timeout /t 5
-                    mqsistart %IS_NAME%
+                    echo Restart not using mqsirestart (fix required)
                     """
                 }
             }
