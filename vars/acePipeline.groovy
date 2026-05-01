@@ -61,18 +61,23 @@ def call() {
             }
 
             stage('Deploy to Integration Server (REAL)') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+				steps {
+					bat """
+					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying BAR to Integration Server...
+					echo Deploying BAR to PRUEBAS_LOCAL...
 
-                    ibmint deploy ^
-                        --input-bar-file "%APP_NAME%.bar" ^
-                        --output-work-directory "%WORK_DIR%\\%IS_NAME%"
-                    """
-                }
-            }
+					if not exist "%WORK_DIR%\\server.conf.yaml" (
+						echo ERROR: PRUEBAS_LOCAL no es un Integration Server valido
+						exit /b 1
+					)
+
+					ibmint deploy ^
+						--input-bar-file "%APP_NAME%.bar" ^
+						--output-work-directory "%WORK_DIR%"
+					"""
+				}
+			}
 
             stage('Restart Integration Server') {
                 steps {
