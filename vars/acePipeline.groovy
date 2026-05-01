@@ -65,21 +65,22 @@ def call() {
                 }
             }
 
-            stage('Deploy') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+            stage('Deploy to Integration Server') {
+				steps {
+					bat """
+					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying to %IS_NAME%...
+					echo Deploy REAL al Integration Server %IS_NAME%
 
-                    ibmint deploy ^
-                      --input-bar-file "%APP_NAME%.bar" ^
-                      --output-work-directory "%WORK_DIR%"
+					mqsibar ^
+					  -a "%APP_NAME%.bar" ^
+					  -w "%WORK_DIR%"
 
-                    echo Deployment completed.
-                    """
-                }
-            }
+					echo App desplegada en IS
+					"""
+				}
+			}
+}
 
             stage('Verify Deployment') {
                 steps {
