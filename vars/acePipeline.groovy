@@ -22,32 +22,36 @@ def call() {
                 }
             }
 
-            stage('Detect App Name & Root') {
+            stage('Detect App Name & Root (SAFE)') {
                 steps {
                     script {
 
-                        // ================================
-                        // BUSCAR .project SIN findFiles
-                        // ================================
-                        def projectFiles = bat(
-                            script: 'dir /s /b .project',
-                            returnStdout: true
-                        ).trim().split("\\r?\\n")
+                        // ==================================================
+                        // BUSCAR .project SIN returnStdout (modo seguro)
+                        // ==================================================
+                        bat '''
+                        @echo off
+                        if exist files.txt del files.txt
 
-                        if (projectFiles == null || projectFiles.length == 0 || projectFiles[0].trim() == "") {
+                        for /r %%i in (.project) do (
+                            echo %%i >> files.txt
+                        )
+                        '''
+
+                        def file = readFile('files.txt').trim()
+
+                        if (!file || file.length() == 0) {
                             error "No se encontró .project (no es app ACE válida)"
                         }
 
+                        def projectFiles = file.split("\\r?\\n")
                         def appProjectPath = projectFiles[0].trim()
 
-                        // Normalizar ruta Windows
-                        appProjectPath = appProjectPath.replaceAll("\\r", "").replaceAll("\\n", "")
+                        echo "Project encontrado: ${appProjectPath}"
 
-                        def appRoot = appProjectPath.replace("\\.project", "")
-
-                        // ================================
+                        // ==================================================
                         // LEER NOMBRE DE APP
-                        // ================================
+                        // ==================================================
                         def projectContent = readFile(appProjectPath)
 
                         def matcher = projectContent =~ /<name>(.*?)<\\/name>/
@@ -57,7 +61,9 @@ def call() {
                         }
 
                         env.APP_NAME = matcher.group(1)
-                        env.APP_ROOT = appRoot
+
+                        // quitar .project de forma segura
+                        env.APP_ROOT = appProjectPath.replace("\\.project", "")
 
                         echo "App ACE detectada: ${env.APP_NAME}"
                         echo "App Root detectado: ${env.APP_ROOT}"
