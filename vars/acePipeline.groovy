@@ -1,103 +1,101 @@
-def call(Map config = [:]) {
+@Library('ace-shared-lib') _
 
-    // ===== CONFIG SEGURA (SIN environment block problemático) =====
-    def ACE_HOME = "C:\\Program Files\\IBM\\ACE\\12.0.8.0"
-    def IS_NAME  = config.IS_NAME ?: "PRUEBAS_LOCAL"
-    def WORK_DIR = config.WORK_DIR ?: "E:\\ACE\\IS\\PRUEBAS_LOCAL"
+pipeline {
+    agent any
 
-    pipeline {
-        agent any
+    environment {
+        ACE_HOME = "C:\\Program Files\\IBM\\ACE\\12.0.8.0"
+        IS_NAME  = "PRUEBAS_LOCAL"
+        WORK_DIR = "E:\\ACE\\IS\\PRUEBAS_LOCAL"
+    }
 
-        stages {
+    stages {
 
-            stage('Clean Workspace') {
-                steps {
-                    deleteDir()
-                }
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
             }
+        }
 
-            stage('Checkout') {
-                steps {
-                    checkout scm
-                }
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
+        }
 
-            stage('Detect App') {
-                steps {
-                    script {
+        stage('Detect App') {
+            steps {
+                script {
+                    def projectFile = findFiles(glob: "**/.project")
 
-                        def projectFile = findFiles(glob: "**/.project")
-
-                        if (!projectFile || projectFile.length == 0) {
-                            error "❌ No se encontró archivo .project"
-                        }
-
-                        def content = readFile(projectFile[0].path)
-
-                        def matcher = (content =~ /<name>(.*?)<\/name>/)
-
-                        if (!matcher || matcher.size() == 0) {
-                            error "❌ No se pudo leer el nombre de la aplicación"
-                        }
-
-                        env.APP_NAME = matcher[0][1]
-                        env.APP_ROOT = pwd()
-
-                        echo "✔ App detectada: ${env.APP_NAME}"
-                        echo "✔ Root: ${env.APP_ROOT}"
+                    if (projectFile.length == 0) {
+                        error "No se encontró .project"
                     }
-                }
-            }
 
-            stage('Build BAR') {
-                steps {
-                    bat """
-                    call "${ACE_HOME}\\server\\bin\\mqsiprofile.cmd"
+                    def projectContent = readFile(projectFile[0].path)
+                    def matcher = (projectContent =~ /<name>(.*?)<\/name>/)
 
-                    echo Building BAR...
+                    if (!matcher) {
+                        error "No se pudo leer app name"
+                    }
 
-                    ibmint package ^
-                      --input-path "%APP_ROOT%" ^
-                      --output-bar-file "%APP_NAME%.bar"
-                    """
-                }
-            }
+                    env.APP_NAME = matcher[0][1]
+                    env.APP_ROOT = pwd()
 
-            stage('Deploy to Integration Server') {
-                steps {
-                    bat """
-                    call "${ACE_HOME}\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Deploying to %IS_NAME%...
-
-                    ibmint deploy ^
-                      --input-bar-file "%APP_NAME%.bar" ^
-                      --output-work-directory "%WORK_DIR%"
-                    """
-                }
-            }
-
-            stage('Restart Integration Server') {
-                steps {
-                    bat """
-                    call "${ACE_HOME}\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Restarting %IS_NAME%...
-
-                    mqsirestart %IS_NAME%
-                    """
+                    echo "✔ App: ${env.APP_NAME}"
+                    echo "✔ Root: ${env.APP_ROOT}"
                 }
             }
         }
 
-        post {
-            success {
-                echo "✅ Deployment OK"
-            }
+        stage('Build BAR') {
+            steps {
+                bat """
+                call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-            failure {
-                echo "❌ Deployment FAILED"
+                echo Building BAR...
+
+                ibmint package ^
+                  --input-path "%APP_ROOT%" ^
+                  --output-bar-file "%APP_NAME%.bar"
+                """
             }
+        }
+
+        stage('Deploy') {
+            steps {
+                bat """
+                call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+
+                echo Deploying to IS %IS_NAME%...
+
+                mqsibar -a "%APP_NAME%.bar" ^
+                        -c %IS_NAME%
+                """
+            }
+        }
+
+        stage('Restart IS (FIXED)') {
+            steps {
+                bat """
+                call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+
+                echo Restarting Integration Server %IS_NAME%...
+
+                mqsistop %IS_NAME%
+                timeout /t 5
+                mqsistart %IS_NAME%
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✔ Deployment OK"
+        }
+        failure {
+            echo "❌ Deployment FAILED"
         }
     }
 }
