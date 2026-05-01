@@ -26,20 +26,28 @@ def call() {
                 steps {
                     script {
 
-                        // Buscar .project correctamente
+                        // ================================
+                        // BUSCAR .project SIN findFiles
+                        // ================================
                         def projectFiles = bat(
                             script: 'dir /s /b .project',
                             returnStdout: true
                         ).trim().split("\\r?\\n")
 
-                        if (projectFiles.size() == 0 || projectFiles[0].trim() == "") {
+                        if (projectFiles == null || projectFiles.length == 0 || projectFiles[0].trim() == "") {
                             error "No se encontró .project (no es app ACE válida)"
                         }
 
                         def appProjectPath = projectFiles[0].trim()
+
+                        // Normalizar ruta Windows
+                        appProjectPath = appProjectPath.replaceAll("\\r", "").replaceAll("\\n", "")
+
                         def appRoot = appProjectPath.replace("\\.project", "")
 
-                        // Leer contenido del .project
+                        // ================================
+                        // LEER NOMBRE DE APP
+                        // ================================
                         def projectContent = readFile(appProjectPath)
 
                         def matcher = projectContent =~ /<name>(.*?)<\\/name>/
