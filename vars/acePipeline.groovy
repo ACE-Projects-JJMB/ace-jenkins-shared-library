@@ -72,16 +72,16 @@ def call() {
             }
 
             stage('Build BAR') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+				steps {
+					bat """
+					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    ibmint package ^
-                        --input-path "%WORKSPACE%\\%APP_ROOT%" ^
-                        --output-bar-file "%APP_NAME%.bar"
-                    """
-                }
-            }
+					ibmint package ^
+						--input-path "%APP_ROOT%" ^
+						--output-bar-file "%APP_NAME%.bar"
+					"""
+				}
+			}
 
             stage('Deploy') {
                 steps {
