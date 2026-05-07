@@ -1,10 +1,9 @@
 def call(Map config = [:]) {
 
-    // Defaults seguros
     def appName = config.appName
-    def workDir  = config.workDir
-    def isName   = config.isName
-    def aceHome  = config.aceHome ?: 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
+    def workDir = config.workDir
+    def isName  = config.isName
+    def aceHome = config.aceHome ?: 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
 
     if (!appName) {
         error "appName es obligatorio"
@@ -38,8 +37,7 @@ def call(Map config = [:]) {
 
                     ibmint package ^
                       --input-path "%WORKSPACE%" ^
-                      --output-bar-file "%APP_NAME%.bar" ^
-                      --deploy-as-application "%APP_NAME%"
+                      --output-bar-file "%APP_NAME%.bar"
                     """
                 }
             }
@@ -49,7 +47,7 @@ def call(Map config = [:]) {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying %APP_NAME% to %IS_NAME%
+                    echo Deploying %APP_NAME% to Integration Server
 
                     ibmint deploy ^
                       --input-bar-file "%APP_NAME%.bar" ^
