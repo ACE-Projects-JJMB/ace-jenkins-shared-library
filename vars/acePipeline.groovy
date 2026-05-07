@@ -5,10 +5,6 @@ def call(Map config = [:]) {
     def isName  = config.isName
     def aceHome = config.aceHome ?: 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
 
-    if (!appName) {
-        error "appName es obligatorio"
-    }
-
     pipeline {
 
         agent any
@@ -43,21 +39,20 @@ def call(Map config = [:]) {
             }
 
             stage('Deploy') {
-			steps {
-				bat """
-				call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+                steps {
+                    bat """
+                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-				echo Deploying to Integration Server %IS_NAME%
+                    echo Deploying %APP_NAME%
 
-				mqsideploy ^
-				  -i localhost ^
-				  -p 7600 ^
-				  -a "%APP_NAME%.bar"
-
-				echo Deployment completed
-				"""
-			}
-		}
+                    mqsideploy ^
+                      -i localhost ^
+                      -p 7600 ^
+                      -a "%APP_NAME%.bar"
+                    """
+                }
+            }
+        }
 
         post {
             success {
@@ -68,4 +63,4 @@ def call(Map config = [:]) {
             }
         }
     }
-}
+}   // 👈 ESTA LLAVE ES LA QUE TE FALTABA (MUY PROBABLEMENTE)
