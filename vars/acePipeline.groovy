@@ -80,20 +80,6 @@ def call() {
                 }
             }
 
-            stage('Restart Integration Server') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Restarting Integration Server %IS_NAME%
-
-                    mqsireload %IS_NAME%
-
-                    echo Reload done
-                    """
-                }
-            }
-
             stage('Verify Deployment') {
                 steps {
                     bat """
