@@ -1,52 +1,31 @@
-def call() {
+def call(Map config = [:]) {
+
+    // Defaults seguros
+    def appName = config.appName
+    def workDir  = config.workDir
+    def isName   = config.isName
+    def aceHome  = config.aceHome ?: 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
+
+    if (!appName) {
+        error "appName es obligatorio"
+    }
 
     pipeline {
 
         agent any
 
         environment {
-            ACE_HOME = 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
-            IS_NAME  = 'PRUEBAS_LOCAL'
-            WORK_DIR = 'E:\\ACE\\IS\\PRUEBAS_LOCAL'
+            ACE_HOME = "${aceHome}"
+            APP_NAME = "${appName}"
+            WORK_DIR = "${workDir}"
+            IS_NAME  = "${isName}"
         }
 
         stages {
 
-            stage('Clean Workspace') {
-                steps {
-                    deleteDir()
-                }
-            }
-
             stage('Checkout') {
                 steps {
                     checkout scm
-                }
-            }
-
-            stage('Detect App') {
-                steps {
-                    script {
-
-                        def projectFile = findFiles(glob: "**/.project")
-
-                        if (projectFile.length == 0) {
-                            error "No se encontró .project"
-                        }
-
-                        def content = readFile(projectFile[0].path)
-                        def matcher = (content =~ /<name>(.*?)<\/name>/)
-
-                        if (!matcher) {
-                            error "No se pudo leer nombre de app"
-                        }
-
-                        env.APP_NAME = matcher[0][1]
-                        env.APP_ROOT = pwd()
-
-                        echo "App detectada: ${env.APP_NAME}"
-                        echo "Root: ${env.APP_ROOT}"
-                    }
                 }
             }
 
@@ -55,47 +34,40 @@ def call() {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Building BAR...
+                    echo Building BAR for %APP_NAME%
 
                     ibmint package ^
-                      --input-path "%APP_ROOT%" ^
-                      --output-bar-file "%APP_NAME%.bar"
+                      --input-path "%WORKSPACE%" ^
+                      --output-bar-file "%APP_NAME%.bar" ^
+                      --deploy-as-application "%APP_NAME%"
                     """
                 }
             }
 
-            stage('Deploy to Integration Server') {
-				steps {
-					bat """
-					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
-
-					ibmint deploy ^
-					  --input-bar-file "%APP_NAME%.bar" ^
-					  --output-work-directory "%WORK_DIR%" ^
-					  --deploy-applications "%APP_NAME%"
-
-					echo Deployment completed
-					"""
-				}
-			}
-
-            stage('Verify Deployment') {
+            stage('Deploy') {
                 steps {
                     bat """
-                    echo Checking work directory...
+                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    dir "%WORK_DIR%"
+                    echo Deploying %APP_NAME% to %IS_NAME%
+
+                    ibmint deploy ^
+                      --input-bar-file "%APP_NAME%.bar" ^
+                      --output-work-directory "%WORK_DIR%"
+
+                    echo Deployment completed
                     """
                 }
             }
+
         }
 
         post {
             success {
-                echo "Deployment SUCCESS"
+                echo "Deployment SUCCESS for ${appName}"
             }
             failure {
-                echo "Deployment FAILED"
+                echo "Deployment FAILED for ${appName}"
             }
         }
     }
