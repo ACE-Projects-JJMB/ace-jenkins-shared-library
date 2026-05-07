@@ -43,22 +43,21 @@ def call(Map config = [:]) {
             }
 
             stage('Deploy') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+			steps {
+				bat """
+				call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying %APP_NAME% to Integration Server
+				echo Deploying to Integration Server %IS_NAME%
 
-                    ibmint deploy ^
-                      --input-bar-file "%APP_NAME%.bar" ^
-                      --output-work-directory "%WORK_DIR%"
+				mqsideploy ^
+				  -i localhost ^
+				  -p 7600 ^
+				  -a "%APP_NAME%.bar"
 
-                    echo Deployment completed
-                    """
-                }
-            }
-
-        }
+				echo Deployment completed
+				"""
+			}
+		}
 
         post {
             success {
