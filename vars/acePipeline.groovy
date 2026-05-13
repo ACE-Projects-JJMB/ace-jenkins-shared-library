@@ -31,9 +31,8 @@ def call(Map config = [:]) {
 
                     echo Building BAR for %APP_NAME%
 
-                    ibmint package ^
-					  --input-path "%WORKSPACE%" ^
-					  --output-bar-file "%APP_NAME%.bar"
+                    ibmint package --input-path "%WORKSPACE%" --output-bar-file "%APP_NAME%.bar"
+                    """
                 }
             }
 
@@ -44,10 +43,7 @@ def call(Map config = [:]) {
 
                     echo Deploying %APP_NAME%
 
-                    mqsideploy ^
-                      -i localhost ^
-                      -p 7600 ^
-                      -a "%APP_NAME%.bar"
+                    mqsideploy -i localhost -p 7600 -a "%APP_NAME%.bar"
                     """
                 }
             }
@@ -62,4 +58,4 @@ def call(Map config = [:]) {
             }
         }
     }
-}   // 👈 ESTA LLAVE ES LA QUE TE FALTABA (MUY PROBABLEMENTE)
+}
