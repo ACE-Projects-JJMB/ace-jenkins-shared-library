@@ -53,8 +53,7 @@ def call(Map config = [:]) {
 					echo Building BAR for %APP_NAME%
 
 					ibmint package ^
-					  --input-path "%WORKSPACE%" ^
-					  --project "%APP_FOLDER%" ^
+					  --input-path "%WORKSPACE%\\%APP_FOLDER%" ^
 					  --output-bar-file "%APP_NAME%.bar"
 					"""
 				}
