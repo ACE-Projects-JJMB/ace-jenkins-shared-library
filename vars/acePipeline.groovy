@@ -27,7 +27,7 @@ def call(Map config = [:]) {
                         def folder = bat(
                             script: """
                             @echo off
-                            for /d %%i in ("%WORKSPACE%\\*") do (
+                            for /d %%i in ("%WORKSPACE%\\app\\*") do (
                                 if exist "%%i\\application.descriptor" (
                                     echo %%~nxi
                                     goto :end
@@ -46,18 +46,18 @@ def call(Map config = [:]) {
             }
 
             stage('Build BAR') {
-				steps {
-					bat """
-					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+                steps {
+                    bat """
+                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-					echo Building BAR for %APP_NAME%
+                    echo Building BAR for %APP_NAME%
 
-					ibmint package ^
-					  --input-path "%WORKSPACE%\\%APP_FOLDER%" ^
-					  --output-bar-file "%APP_NAME%.bar"
-					"""
-				}
-			}
+                    ibmint package ^
+                      --input-path "%WORKSPACE%\\app\\%APP_FOLDER%" ^
+                      --output-bar-file "%APP_NAME%.bar"
+                    """
+                }
+            }
 
             stage('Deploy') {
                 steps {
@@ -77,10 +77,10 @@ def call(Map config = [:]) {
 
         post {
             success {
-                echo "Deployment SUCCESS for ${appName}"
+                echo "Deployment SUCCESS for ${APP_NAME}"
             }
             failure {
-                echo "Deployment FAILED for ${appName}"
+                echo "Deployment FAILED for ${APP_NAME}"
             }
         }
     }
