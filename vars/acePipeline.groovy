@@ -34,6 +34,7 @@ def call(Map config = [:]) {
                     ibmint package ^
                       --input-path "%WORKSPACE%" ^
 					  --project "%APP_NAME%" ^
+					  --include-dependencies ^
                       --output-bar-file "%APP_NAME%.bar"
                     """
                 }
