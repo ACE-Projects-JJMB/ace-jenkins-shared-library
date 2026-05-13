@@ -46,18 +46,19 @@ def call(Map config = [:]) {
             }
 
             stage('Build BAR') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+				steps {
+					bat """
+					call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Building BAR for %APP_NAME%
+					echo Building BAR for %APP_NAME%
 
-                    ibmint package ^
-                      --input-path "%WORKSPACE%\\%APP_FOLDER%" ^
-                      --output-bar-file "%APP_NAME%.bar"
-                    """
-                }
-            }
+					ibmint package ^
+					  --input-path "%WORKSPACE%" ^
+					  --output-bar-file "%APP_NAME%.bar" ^
+					  --project-filter "%APP_FOLDER%"
+					"""
+				}
+			}
 
             stage('Deploy') {
                 steps {
