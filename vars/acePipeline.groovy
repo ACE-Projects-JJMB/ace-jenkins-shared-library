@@ -54,8 +54,8 @@ def call(Map config = [:]) {
 
 					ibmint package ^
 					  --input-path "%WORKSPACE%" ^
-					  --output-bar-file "%APP_NAME%.bar" ^
-					  --project-filter "%APP_FOLDER%"
+					  --project "%APP_FOLDER%" ^
+					  --output-bar-file "%APP_NAME%.bar"
 					"""
 				}
 			}
