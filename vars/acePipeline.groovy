@@ -1,8 +1,6 @@
 def call(Map config = [:]) {
 
     def appName = config.appName
-    def workDir = config.workDir
-    def isName  = config.isName
     def aceHome = config.aceHome ?: 'C:\\Program Files\\IBM\\ACE\\12.0.8.0'
 
     pipeline {
@@ -12,8 +10,6 @@ def call(Map config = [:]) {
         environment {
             ACE_HOME = "${aceHome}"
             APP_NAME = "${appName}"
-            WORK_DIR = "${workDir}"
-            IS_NAME  = "${isName}"
         }
 
         stages {
@@ -24,6 +20,31 @@ def call(Map config = [:]) {
                 }
             }
 
+            stage('Detect App Folder') {
+                steps {
+                    script {
+
+                        def folder = bat(
+                            script: """
+                            @echo off
+                            for /d %%i in ("%WORKSPACE%\\*") do (
+                                if exist "%%i\\application.descriptor" (
+                                    echo %%~nxi
+                                    goto :end
+                                )
+                            )
+                            :end
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        env.APP_FOLDER = folder
+
+                        echo "Detected Application Folder: ${env.APP_FOLDER}"
+                    }
+                }
+            }
+
             stage('Build BAR') {
                 steps {
                     bat """
@@ -31,7 +52,9 @@ def call(Map config = [:]) {
 
                     echo Building BAR for %APP_NAME%
 
-                    ibmint package --input-path "%WORKSPACE%" --output-bar-file "%APP_NAME%.bar"
+                    ibmint package ^
+                      --input-path "%WORKSPACE%\\%APP_FOLDER%" ^
+                      --output-bar-file "%APP_NAME%.bar"
                     """
                 }
             }
@@ -43,7 +66,10 @@ def call(Map config = [:]) {
 
                     echo Deploying %APP_NAME%
 
-                    mqsideploy -i localhost -p 7600 -a "%APP_NAME%.bar"
+                    mqsideploy ^
+                      -i localhost ^
+                      -p 7600 ^
+                      -a "%APP_NAME%.bar"
                     """
                 }
             }
