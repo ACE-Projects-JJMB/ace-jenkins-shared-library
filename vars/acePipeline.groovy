@@ -39,18 +39,54 @@ def call(Map config = [:]) {
                         ).trim()
 
                         env.APP_FOLDER = folder
-
                         echo "Detected Application Folder: ${env.APP_FOLDER}"
                     }
                 }
             }
 
-            stage('Build BAR') {
+            stage('Detect LIB') {
+                steps {
+                    script {
+                        env.HAS_LIB = fileExists("lib") ? "true" : "false"
+                        echo "Lib detected: ${env.HAS_LIB}"
+                    }
+                }
+            }
+
+            stage('Build & Deploy LIB') {
+                when {
+                    expression { env.HAS_LIB == "true" }
+                }
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Building BAR for %APP_NAME%
+                    echo Building LIB
+
+                    ibmint package ^
+                      --input-path "%WORKSPACE%\\lib" ^
+                      --output-bar-file "lib.bar"
+                    """
+                    
+                    bat """
+                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+
+                    echo Deploying LIB
+
+                    mqsideploy ^
+                      -i localhost ^
+                      -p 7600 ^
+                      -a lib.bar
+                    """
+                }
+            }
+
+            stage('Build APP') {
+                steps {
+                    bat """
+                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
+
+                    echo Building APP
 
                     ibmint package ^
                       --input-path "%WORKSPACE%\\app\\%APP_FOLDER%" ^
@@ -59,12 +95,12 @@ def call(Map config = [:]) {
                 }
             }
 
-            stage('Deploy') {
+            stage('Deploy APP') {
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Deploying %APP_NAME%
+                    echo Deploying APP
 
                     mqsideploy ^
                       -i localhost ^
