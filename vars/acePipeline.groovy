@@ -20,82 +20,21 @@ def call(Map config = [:]) {
                 }
             }
 
-            stage('Detect App Folder') {
-                steps {
-                    script {
-
-                        def folder = bat(
-                            script: """
-                            @echo off
-                            for /d %%i in ("%WORKSPACE%\\app\\*") do (
-                                if exist "%%i\\application.descriptor" (
-                                    echo %%~nxi
-                                    goto :end
-                                )
-                            )
-                            :end
-                            """,
-                            returnStdout: true
-                        ).trim()
-
-                        env.APP_FOLDER = folder
-                        echo "Detected Application Folder: ${env.APP_FOLDER}"
-                    }
-                }
-            }
-
-            stage('Detect LIB') {
-                steps {
-                    script {
-                        env.HAS_LIB = fileExists("lib") ? "true" : "false"
-                        echo "Lib detected: ${env.HAS_LIB}"
-                    }
-                }
-            }
-
-            stage('Build & Deploy LIB') {
-                when {
-                    expression { env.HAS_LIB == "true" }
-                }
+            stage('Build') {
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
 
-                    echo Building LIB
+                    echo Building ALL (APP + LIB if exists)
 
                     ibmint package ^
-                      --input-path "%WORKSPACE%\\lib" ^
-                      --output-bar-file "lib.bar"
-                    """
-                    
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Deploying LIB
-
-                    mqsideploy ^
-                      -i localhost ^
-                      -p 7600 ^
-                      -a lib.bar
-                    """
-                }
-            }
-
-            stage('Build APP') {
-                steps {
-                    bat """
-                    call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
-
-                    echo Building APP
-
-                    ibmint package ^
-                      --input-path "%WORKSPACE%\\app\\%APP_FOLDER%" ^
+                      --input-path "%WORKSPACE%" ^
                       --output-bar-file "%APP_NAME%.bar"
                     """
                 }
             }
 
-            stage('Deploy APP') {
+            stage('Deploy') {
                 steps {
                     bat """
                     call "%ACE_HOME%\\server\\bin\\mqsiprofile.cmd"
